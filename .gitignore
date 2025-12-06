@@ -1,0 +1,43 @@
+# --- Node Modules ---
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# --- Environment Variables ---
+.env
+.env.local
+.env.*.local
+
+# --- Next.js Build Output ---
+.next/
+out/
+dist/
+build/
+
+# --- Logs ---
+*.log
+logs/
+debug.log
+error.log
+
+# --- OS / Editor Files ---
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+
+# --- Supabase ---
+.supabase/
+supabase/.temp/
+supabase/migrations/.temp/
+
+# --- TypeScript Output ---
+*.tsbuildinfo
+
+# --- Cache / Editor ---
+.cache/
+.next/cache/
+.vscode/
+.idea/
+coverage/
