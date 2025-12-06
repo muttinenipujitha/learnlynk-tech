@@ -150,17 +150,19 @@ The related applications row is updated to a new stage such as "fee_paid".
 
 Failed or expired sessions update payment_requests.status to "failed" or "expired".
 
-🖼️ Screenshots
+## 🖼️ Screenshots
+
 These screenshots demonstrate database tests, UI functionality, and task actions.
 
-## 1️⃣ SQL – Task Insert Test in Supabase
-![SQL Test](./screenshots/sql_test.png)
+### 1️⃣ SQL – Task Insert Test in Supabase
+![SQL Test](https://raw.githubusercontent.com/muttinenipujitha/learnlynk-tech/main/screenshots/sql_test.png)
 
-## 2️⃣ UI – Task Appearing in Dashboard with "Mark Complete"
-![Tasks List](./screenshots/tasks_list.png)
+### 2️⃣ UI – Task Appearing in Dashboard with "Mark Complete"
+![Tasks List](https://raw.githubusercontent.com/muttinenipujitha/learnlynk-tech/main/screenshots/tasks_list.png)
 
-## 3️⃣ UI – After Completing the Task (“No tasks due today 🎉”)
-![Empty Tasks](./screenshots/tasks_empty.png)
+### 3️⃣ UI – After Completing the Task (“No tasks due today 🎉”)
+![Empty Tasks](https://raw.githubusercontent.com/muttinenipujitha/learnlynk-tech/main/screenshots/tasks_empty.png)
+
 
 
 🛠 Local Setup & Run Instructions
