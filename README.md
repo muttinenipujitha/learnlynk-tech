@@ -153,15 +153,15 @@ Failed or expired sessions update payment_requests.status to "failed" or "expire
 🖼️ Screenshots
 These screenshots demonstrate database tests, UI functionality, and task actions.
 
-1️⃣ SQL – Task Insert Test in Supabase
-![SQL Test](./learnlynk-tech-test/screenshots/sql_test.png)
+## 1️⃣ SQL – Task Insert Test in Supabase
+![SQL Test](./screenshots/sql_test.png)
 
-
-2️⃣ UI – Task Appearing in Dashboard with "Mark Complete"
+## 2️⃣ UI – Task Appearing in Dashboard with "Mark Complete"
 ![Tasks List](./screenshots/tasks_list.png)
 
-3️⃣ UI – After Completing the Task (“No tasks due today 🎉”)
+## 3️⃣ UI – After Completing the Task (“No tasks due today 🎉”)
 ![Empty Tasks](./screenshots/tasks_empty.png)
+
 
 🛠 Local Setup & Run Instructions
 1. Frontend
