@@ -161,7 +161,7 @@ These screenshots demonstrate database tests, UI functionality, and task actions
 ![Tasks List](screenshots/tasks_list.png)
 
 ### 3️⃣ UI – After Completing the Task (“No tasks due today 🎉”)
-![Empty Tasks](screenshots/main-ui.png)
+![Empty Tasks](screenshots/tasks_empty.png)
 
 
 
