@@ -1,7 +1,7 @@
 # LearnLynk – Technical Assessment (Completed Submission)
 
 This repository contains my completed solution for the LearnLynk technical assessment.  
-The project demonstrates database design, row-level security, Edge Functions, and a small Next.js frontend page integrated with Supabase.
+The goal of this project is to demonstrate database schema design, Supabase RLS, Edge Functions, and a simple Next.js dashboard for task management.
 
 ---
 
@@ -10,12 +10,10 @@ The project demonstrates database design, row-level security, Edge Functions, an
 | Task | File |
 |------|------|
 | Task 1 — Database Schema | `backend/schema.sql` |
-| Task 2 — Row-Level Security Policies | `backend/rls_policies.sql` |
-| Task 3 — Edge Function (`/create-task`) | `backend/edge-functions/create-task/index.ts` |
-| Task 4 — Frontend Page (`/dashboard/today`) | `frontend/pages/dashboard/today.tsx` |
-| Task 5 — Stripe Checkout (Written Answer) | Included at bottom of this README |
-
-All tasks follow the exact requirements outlined in the assignment.
+| Task 2 — RLS Policies | `backend/rls_policies.sql` |
+| Task 3 — Edge Function `/create-task` | `backend/edge-functions/create-task/index.ts` |
+| Task 4 — Next.js Page `/dashboard/today` | `frontend/pages/dashboard/today.tsx` |
+| Task 5 — Stripe Checkout Answer | Included at bottom of this README |
 
 ---
 
@@ -23,220 +21,188 @@ All tasks follow the exact requirements outlined in the assignment.
 
 File: **`backend/schema.sql`**
 
-Implemented tables:
+Tables implemented:
 
 - `leads`
 - `applications`
 - `tasks`
 
-Every table includes required fields:
+All tables include:
 
 ```sql
 id uuid primary key default gen_random_uuid(),
 tenant_id uuid not null,
 created_at timestamptz default now(),
 updated_at timestamptz default now()
-Additional Requirements Implemented
+Additional requirements implemented:
+applications.lead_id → FK → leads.id
 
-applications.lead_id → foreign key to leads.id
+tasks.application_id → FK → applications.id
 
-tasks.application_id → foreign key to applications.id
+tasks.type uses a CHECK constraint allowing only 'call', 'email', 'review'
 
-tasks.type restricted to: 'call', 'email', 'review'
+tasks.due_at >= created_at
 
-tasks.due_at >= tasks.created_at (check constraint)
+Indexes added for efficient queries:
 
-Indexes created for typical access patterns:
+Leads: (tenant_id, owner_id, stage)
 
-Leads → (tenant_id, owner_id, stage)
+Applications: (tenant_id, lead_id)
 
-Applications → (tenant_id, lead_id)
-
-Tasks → (tenant_id, due_at, status)
+Tasks: (tenant_id, due_at, status)
 
 🔐 Task 2 — Row-Level Security
-
 File: backend/rls_policies.sql
 
-RLS enabled and enforced on leads.
+RLS is enabled and policies fully implemented.
 
-Requirements Implemented
+Access Control Rules
+Counselors can read:
 
-Counselors can view:
+Leads they own (owner_id = user_id)
 
-Leads where they are owner_id
+Leads belonging to teams they are part of (user_teams)
 
-Leads associated with any team they belong to (via user_teams)
+Admins can read all leads within their tenant
 
-Admins can view:
+INSERT operations allowed for counselors/admins inside their own tenant
 
-All leads within their same tenant_id
+JWT Assumptions:
 
-Insert Policy:
-
-Counselors + admins may insert leads only under their own tenant_id
-
-Required Tables (assumed by prompt)
-users(id, tenant_id, role)
-teams(id, tenant_id)
-user_teams(user_id, team_id)
-
-
-JWT contains: user_id, role, tenant_id.
-
+java
+Copy code
+user_id
+tenant_id
+role ("admin" or "counselor")
 ⚡ Task 3 — Supabase Edge Function: /create-task
-
 File: backend/edge-functions/create-task/index.ts
 
-Function Behavior
+Function Responsibilities
+Accept JSON input:
 
-Accepts POST input:
-
+json
+Copy code
 {
   "application_id": "uuid",
   "task_type": "call",
   "due_at": "2025-01-01T12:00:00Z"
 }
-
-Validation Rules
-
+Validation:
 task_type must be call, email, or review
 
-due_at must:
+due_at must be:
 
-Be a valid ISO timestamp
+a valid timestamp
 
-Be in the future
+in the future
 
-On Success
-
-Inserts a new task using the service role key
-
-Returns:
-
+Output:
+json
+Copy code
 { "success": true, "task_id": "..." }
+Errors:
+400 → Validation error
 
-On Failure
+500 → Internal server/db error
 
-Returns 400 for validation errors
-
-Returns 500 for unexpected server/database errors
-
-Realtime broadcast event "task.created" is also emitted.
+A Supabase Realtime event task.created is also emitted.
 
 💻 Task 4 — Next.js Page /dashboard/today
-
 File: frontend/pages/dashboard/today.tsx
 
-Page Features
+Features:
+Fetches tasks due today where status ≠ completed
 
-Fetches tasks due today (status != 'completed')
+Displays a clean table:
 
-Displays:
+task type
 
-type
+application ID
 
-application_id
-
-due_at
+due date
 
 status
 
-Includes “Mark Complete” button:
+Includes a “Mark Complete” button using:
 
-Calls supabase.from("tasks").update()
+ts
+Copy code
+supabase.from("tasks").update()
+Auto-refresh after mutation
 
-Refreshes the page after update
-
-Handles loading + error states
-
-Uses the Supabase client provided at frontend/lib/supabaseClient.ts
+Includes loading and error states
 
 💳 Task 5 — Stripe Answer
-
-(As required, the Stripe answer is included inside this README below.)
-
 Stripe Answer
+When a user initiates payment, I insert a payment_requests row with amount, currency, application_id, and status = 'pending'.
 
-When a user begins the checkout process, I insert a payment_requests row with application_id, fee amount, currency, and status = 'pending'.
+The backend creates a Stripe Checkout Session using stripe.checkout.sessions.create(), including metadata with the payment_request_id.
 
-The backend calls stripe.checkout.sessions.create() with:
+I store the returned session.id (and optionally payment_intent) in the DB so webhook events can be tied back to the request.
 
-The application fee line item
+The frontend receives the session.url and redirects the user to Stripe Checkout.
 
-Success/cancel URLs
+A secure webhook endpoint validates Stripe signatures using the webhook secret.
 
-Metadata containing payment_request_id and application_id
+On checkout.session.completed or payment_intent.succeeded, the payment_requests row is updated to status = 'succeeded'.
 
-I store session.id (and optionally payment_intent) back into the payment_requests record.
+The related applications row is updated to a new stage such as "fee_paid".
 
-The frontend receives the session.url and redirects the user to Stripe-hosted Checkout.
+Failed or expired sessions update payment_requests.status to "failed" or "expired".
 
-A webhook endpoint (e.g., /api/stripe/webhook) validates Stripe events using the signing secret.
+🖼️ Screenshots
+These screenshots demonstrate database tests, UI functionality, and task actions.
 
-When checkout.session.completed or payment_intent.succeeded fires, I update:
+1️⃣ SQL – Task Insert Test in Supabase
 
-payment_requests.status = 'succeeded'
+2️⃣ UI – Task Appearing in Dashboard with "Mark Complete"
 
-Store payment details for audit
+3️⃣ UI – After Completing the Task (“No tasks due today 🎉”)
 
-In the same operation, I update applications.stage = 'fee_paid' and optionally add a timeline entry.
-
-If the payment expires or fails, I update payment_requests.status accordingly and the application stays in “awaiting payment” state.
-
-🛠 Running This Project Locally
-1. Frontend Setup
+🛠 Local Setup & Run Instructions
+1. Frontend
+arduino
+Copy code
 cd frontend
 npm install
 npm run dev
-
-
 Visit:
 
+bash
+Copy code
 http://localhost:3000/dashboard/today
-
 2. Environment Variables
+Add frontend/.env.local:
 
-Create file: frontend/.env.local
+ini
+Copy code
+NEXT_PUBLIC_SUPABASE_URL=your-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+3. Supabase Database
+Run the schema and RLS scripts:
 
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+pgsql
+Copy code
+backend/schema.sql
+backend/rls_policies.sql
+4. Edge Function
+Serve locally:
 
-
-Restart:
-
-npm run dev
-
-3. Supabase Database Setup
-
-In Supabase SQL Editor:
-
-Run backend/schema.sql
-
-Run backend/rls_policies.sql
-
-4. Edge Function Locally
+pgsql
+Copy code
 supabase functions serve create-task
+Deploy:
 
-
-Or deploy:
-
+pgsql
+Copy code
 supabase functions deploy create-task
-
-
-Secrets required:
-
-SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY
-
 ✔ Notes / Assumptions
+Supporting tables like users, teams, and user_teams were assumed to exist.
 
-Supporting tables such as users, teams, and user_teams are assumed to exist.
+Service role key is used only inside Edge Function (never client-side).
 
-.env.local is intentionally not committed.
-
-All components tested successfully with a real Supabase project.
+.env.local stays uncommitted for security.
 
 🎉 Thank You!
-
 This completes the LearnLynk technical assessment.
+Please review the attached implementation and screenshots.
